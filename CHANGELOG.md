@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.45](https://github.com/kunchenguid/gnhf/compare/gnhf-v0.1.44...gnhf-v0.1.45) (2026-08-19)
+
+
+### Bug Fixes
+
+* **agents:** surface shared CLI stdout errors ([#202](https://github.com/kunchenguid/gnhf/issues/202)) ([5cc31af](https://github.com/kunchenguid/gnhf/commit/5cc31afd89668ec653d60fd11418625db4d7c5b4))
+
 ## [0.1.44](https://github.com/kunchenguid/gnhf/compare/gnhf-v0.1.43...gnhf-v0.1.44) (2026-08-13)
 
 
