@@ -63,6 +63,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     });
     expect(config).not.toHaveProperty("commitMessage");
   });
@@ -86,6 +87,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     });
   });
 
@@ -110,6 +112,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     });
   });
 
@@ -168,6 +171,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     });
   });
 
@@ -203,6 +207,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 10,
       preventSleep: true,
+      unattended: false,
     });
   });
 
@@ -218,6 +223,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
   });
 
@@ -233,7 +239,30 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
+  });
+
+  it("reads unattended from config", () => {
+    mockReadFileSync.mockReturnValue("unattended: true\n");
+
+    const config = loadConfig();
+
+    expect(config.unattended).toBe(true);
+  });
+
+  it('coerces "on" for unattended to a boolean true', () => {
+    mockReadFileSync.mockReturnValue("unattended: on\n");
+
+    const config = loadConfig();
+
+    expect(config.unattended).toBe(true);
+  });
+
+  it("throws when unattended is an invalid value", () => {
+    mockReadFileSync.mockReturnValue("unattended: maybe\n");
+
+    expect(() => loadConfig()).toThrow(/Invalid config value for unattended/);
   });
 
   it("overrides take precedence over file config and defaults", () => {
@@ -248,6 +277,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     });
     expect(config).toEqual({
       agent: "claude",
@@ -256,6 +286,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     });
   });
 
@@ -323,6 +354,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     });
   });
 
@@ -339,6 +371,7 @@ describe("loadConfig", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     });
   });
 
