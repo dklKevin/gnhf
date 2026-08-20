@@ -31,7 +31,7 @@ describe("CopilotAgent", () => {
     vi.clearAllMocks();
   });
 
-  it("spawns copilot in non-interactive JSONL mode with the default permission flag", () => {
+  it("spawns copilot in non-interactive JSONL mode without a skip/trust default", () => {
     const proc = createMockProcess();
     mockSpawn.mockReturnValue(proc);
     const agent = new CopilotAgent({ platform: "win32" });
@@ -55,9 +55,20 @@ describe("CopilotAgent", () => {
         "--stream",
         "off",
         "--no-color",
-        "--allow-all",
       ]),
     );
+    expect(args).not.toContain("--allow-all");
+  });
+
+  it("injects --allow-all only when unattended", () => {
+    const proc = createMockProcess();
+    mockSpawn.mockReturnValue(proc);
+    const agent = new CopilotAgent({ unattended: true });
+
+    agent.run("test prompt", "/work/dir");
+
+    const args = mockSpawn.mock.calls[0]![1] as string[];
+    expect(args).toContain("--allow-all");
   });
 
   it("uses a shell on Windows for cmd wrapper paths", () => {
@@ -102,6 +113,7 @@ describe("CopilotAgent", () => {
     mockSpawn.mockReturnValue(proc);
     const agent = new CopilotAgent({
       extraArgs: ["--model", "gpt-5.4", "--allow-all-tools"],
+      unattended: true,
     });
 
     agent.run("test prompt", "/work/dir");

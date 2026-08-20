@@ -141,7 +141,7 @@ function textDelta(
 
 function makeAgent(
   fakeRuntime: ReturnType<typeof createFakeRuntime>["runtime"],
-  overrides: { runId?: string; target?: string } = {},
+  overrides: { runId?: string; target?: string; unattended?: boolean } = {},
 ): AcpAgent {
   return new AcpAgent({
     target: overrides.target ?? "gemini",
@@ -149,6 +149,7 @@ function makeAgent(
     runId: overrides.runId ?? "run-123",
     sessionStateDir: "/tmp/acp-sessions",
     runtimeFactory: () => fakeRuntime as never,
+    unattended: overrides.unattended,
   });
 }
 
@@ -157,6 +158,55 @@ describe("AcpAgent", () => {
     const { runtime } = createFakeRuntime([]);
     const agent = makeAgent(runtime, { target: "gemini" });
     expect(agent.name).toBe("acp:gemini");
+  });
+
+  it("uses deny-all unless unattended is set", async () => {
+    const { runtime } = createFakeRuntime([
+      {
+        events: [textDelta(JSON.stringify(VALID_OUTPUT))],
+        result: { status: "completed" },
+      },
+    ]);
+    const captured: Array<{ permissionMode?: string }> = [];
+    const agent = new AcpAgent({
+      target: "gemini",
+      schema: TEST_SCHEMA,
+      runId: "run-123",
+      sessionStateDir: "/tmp/acp-sessions",
+      runtimeFactory: (options) => {
+        captured.push({ permissionMode: options.permissionMode });
+        return runtime as never;
+      },
+    });
+
+    await agent.run("p", "/w");
+
+    expect(captured).toEqual([{ permissionMode: "deny-all" }]);
+  });
+
+  it("restores approve-all when unattended is set", async () => {
+    const { runtime } = createFakeRuntime([
+      {
+        events: [textDelta(JSON.stringify(VALID_OUTPUT))],
+        result: { status: "completed" },
+      },
+    ]);
+    const captured: Array<{ permissionMode?: string }> = [];
+    const agent = new AcpAgent({
+      target: "gemini",
+      schema: TEST_SCHEMA,
+      runId: "run-123",
+      sessionStateDir: "/tmp/acp-sessions",
+      unattended: true,
+      runtimeFactory: (options) => {
+        captured.push({ permissionMode: options.permissionMode });
+        return runtime as never;
+      },
+    });
+
+    await agent.run("p", "/w");
+
+    expect(captured).toEqual([{ permissionMode: "approve-all" }]);
   });
 
   it("redacts raw command targets in debug logs", async () => {

@@ -376,7 +376,7 @@ describe("OpenCodeAgent", () => {
     });
   });
 
-  it("starts the server, creates a wildcard-approval session, and parses the final answer", async () => {
+  it("starts the server, creates a session without a blanket allow rule, and parses the final answer", async () => {
     const proc = createMockProcess();
     mockSpawn.mockReturnValue(proc);
 
@@ -447,7 +447,6 @@ describe("OpenCodeAgent", () => {
     );
     expect(createSessionBody).toEqual({
       directory: "/repo",
-      permission: [{ permission: "*", pattern: "*", action: "allow" }],
     });
 
     const messageBody = JSON.parse(
@@ -497,6 +496,48 @@ describe("OpenCodeAgent", () => {
     expect(onMessage).toHaveBeenCalledWith(
       '{"success":true,"summary":"done","key_changes_made":[],"key_learnings":[]}',
     );
+  });
+
+  it("applies a blanket allow rule only when unattended", async () => {
+    const proc = createMockProcess();
+    mockSpawn.mockReturnValue(proc);
+    const unattendedAgent = new OpenCodeAgent({
+      fetch: fetchMock as typeof fetch,
+      getPort,
+      unattended: true,
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ healthy: true, version: "1.3.13" }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          id: "session-123",
+          directory: "/repo",
+          permission: [{ permission: "*", pattern: "*", action: "allow" }],
+        }),
+      )
+      .mockResolvedValueOnce(
+        sseResponse(
+          finalAnswerEvents("done", {
+            input: 1,
+            output: 1,
+            read: 0,
+            write: 0,
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(promptAsyncResponse())
+      .mockResolvedValueOnce(jsonResponse(true));
+
+    await unattendedAgent.run("test prompt", "/repo");
+
+    const createSessionBody = JSON.parse(
+      String(fetchMock.mock.calls[1]?.[1]?.body ?? ""),
+    );
+    expect(createSessionBody).toEqual({
+      directory: "/repo",
+      permission: [{ permission: "*", pattern: "*", action: "allow" }],
+    });
   });
 
   it("uses the configured schema in both the prompt text and request format", async () => {

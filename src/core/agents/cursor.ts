@@ -100,6 +100,7 @@ interface CursorAgentDeps {
   finalResultGraceMs?: number;
   platform?: NodeJS.Platform;
   schema?: AgentOutputSchema;
+  unattended?: boolean;
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -230,7 +231,7 @@ ${JSON.stringify(schema, null, 2)}
 Return only the JSON object in the final answer. Do not wrap it in Markdown. Do not include explanatory prose outside the JSON object.`;
 }
 
-function buildCursorArgs(extraArgs?: string[]): string[] {
+function buildCursorArgs(extraArgs?: string[], unattended = false): string[] {
   const userArgs = extraArgs ?? [];
 
   return [
@@ -238,9 +239,13 @@ function buildCursorArgs(extraArgs?: string[]): string[] {
     "-p",
     "--output-format",
     "stream-json",
-    ...(userSpecifiedPermissionMode(userArgs) ? [] : ["--force"]),
-    ...(userSpecifiedTrust(userArgs) ? [] : ["--trust"]),
-    ...(userSpecifiedApproveMcps(userArgs) ? [] : ["--approve-mcps"]),
+    ...(unattended && !userSpecifiedPermissionMode(userArgs)
+      ? ["--force"]
+      : []),
+    ...(unattended && !userSpecifiedTrust(userArgs) ? ["--trust"] : []),
+    ...(unattended && !userSpecifiedApproveMcps(userArgs)
+      ? ["--approve-mcps"]
+      : []),
   ];
 }
 
@@ -326,6 +331,7 @@ export class CursorAgent implements Agent {
   private finalResultGraceMs: number;
   private platform: NodeJS.Platform;
   private schema: AgentOutputSchema;
+  private unattended: boolean;
 
   constructor(deps: CursorAgentDeps = {}) {
     this.extraArgs = deps.extraArgs;
@@ -335,6 +341,7 @@ export class CursorAgent implements Agent {
     this.bin = deps.bin ?? resolveCursorBin(this.platform);
     this.schema =
       deps.schema ?? buildAgentOutputSchema({ includeStopField: false });
+    this.unattended = deps.unattended === true;
   }
 
   run(
@@ -346,13 +353,17 @@ export class CursorAgent implements Agent {
 
     return new Promise((resolve, reject) => {
       const logStream = logPath ? createWriteStream(logPath) : null;
-      const child = spawn(this.bin, buildCursorArgs(this.extraArgs), {
-        cwd,
-        detached: this.platform !== "win32",
-        shell: shouldUseWindowsShell(this.bin, this.platform),
-        stdio: ["pipe", "pipe", "pipe"],
-        env: process.env,
-      });
+      const child = spawn(
+        this.bin,
+        buildCursorArgs(this.extraArgs, this.unattended),
+        {
+          cwd,
+          detached: this.platform !== "win32",
+          shell: shouldUseWindowsShell(this.bin, this.platform),
+          stdio: ["pipe", "pipe", "pipe"],
+          env: process.env,
+        },
+      );
 
       child.stdin?.write(buildCursorPrompt(prompt, this.schema));
       child.stdin?.end();

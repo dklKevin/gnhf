@@ -19,6 +19,13 @@ export interface CreateAgentOptions {
   includeStopField: boolean;
   commitFields?: AgentOutputCommitField[];
   acpRegistryOverrides?: Record<string, string>;
+  unattended?: boolean;
+}
+
+function unattendedDeps(unattended: boolean | undefined): {
+  unattended?: true;
+} {
+  return unattended ? { unattended: true } : {};
 }
 
 export function createAgent(
@@ -32,6 +39,7 @@ export function createAgent(
     includeStopField: options.includeStopField,
     commitFields: options.commitFields,
   });
+  const unattended = unattendedDeps(options.unattended);
 
   if (isAcpSpec(spec)) {
     return new AcpAgent({
@@ -40,6 +48,7 @@ export function createAgent(
       runId: runInfo.runId,
       sessionStateDir: join(runInfo.runDir, "acp-sessions"),
       registryOverrides: options.acpRegistryOverrides,
+      ...unattended,
     });
   }
 
@@ -50,23 +59,27 @@ export function createAgent(
         bin: pathOverride,
         extraArgs: agentArgsOverride,
         schema,
+        ...unattended,
       });
     case "codex":
       return new CodexAgent(runInfo.schemaPath, {
         bin: pathOverride,
         extraArgs: agentArgsOverride,
+        ...unattended,
       });
     case "copilot":
       return new CopilotAgent({
         bin: pathOverride,
         extraArgs: agentArgsOverride,
         schema,
+        ...unattended,
       });
     case "opencode":
       return new OpenCodeAgent({
         bin: pathOverride,
         extraArgs: agentArgsOverride,
         schema,
+        ...unattended,
       });
     case "pi":
       return new PiAgent({
@@ -79,6 +92,7 @@ export function createAgent(
         bin: pathOverride,
         extraArgs: agentArgsOverride,
         schema,
+        ...unattended,
       });
     case "rovodev":
       return new RovoDevAgent(runInfo.schemaPath, {

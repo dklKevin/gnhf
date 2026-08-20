@@ -43,7 +43,6 @@ describe("CodexAgent", () => {
         "--json",
         "--output-schema",
         "/tmp/schema.json",
-        "--dangerously-bypass-approvals-and-sandbox",
         "--color",
         "never",
       ],
@@ -74,7 +73,6 @@ describe("CodexAgent", () => {
         "--json",
         "--output-schema",
         "/tmp/schema.json",
-        "--dangerously-bypass-approvals-and-sandbox",
         "--color",
         "never",
       ],
@@ -108,7 +106,6 @@ describe("CodexAgent", () => {
         "--json",
         "--output-schema",
         "/tmp/schema.json",
-        "--dangerously-bypass-approvals-and-sandbox",
         "--color",
         "never",
       ],
@@ -118,6 +115,31 @@ describe("CodexAgent", () => {
         stdio: ["ignore", "pipe", "pipe"],
         env: process.env,
       },
+    );
+  });
+
+  it("injects --dangerously-bypass-approvals-and-sandbox only when unattended", () => {
+    const proc = createMockProcess();
+    mockSpawn.mockReturnValue(proc);
+    const agent = new CodexAgent("/tmp/schema.json", {
+      unattended: true,
+    });
+
+    agent.run("test prompt", "/work/dir");
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      "codex",
+      [
+        "exec",
+        "test prompt",
+        "--json",
+        "--output-schema",
+        "/tmp/schema.json",
+        "--dangerously-bypass-approvals-and-sandbox",
+        "--color",
+        "never",
+      ],
+      expect.any(Object),
     );
   });
 
@@ -161,6 +183,7 @@ describe("CodexAgent", () => {
     mockSpawn.mockReturnValue(proc);
     const agent = new CodexAgent("/tmp/schema.json", {
       extraArgs: ["--sandbox=workspace-write"],
+      unattended: true,
     });
 
     agent.run("test prompt", "/work/dir");
