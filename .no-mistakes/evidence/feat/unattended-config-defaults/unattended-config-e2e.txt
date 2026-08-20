@@ -1,0 +1,6 @@
+Command: gnhf "add a hello.txt via cursor agent" --agent cursor --max-iterations 1 --current-branch --prevent-sleep off
+Config: ~/.gnhf/config.yml -> unattended: true
+Exit code: 0
+CLI result: gnhf stopped; cursor ran for 0s before: max iterations reached (1)
+Mock agent argv: ["-p","--output-format","stream-json","--force","--trust","--approve-mcps"]
+End-to-end side effect: hello.txt=hello from cursor mock; commits=2
