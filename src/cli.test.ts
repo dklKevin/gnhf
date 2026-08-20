@@ -391,6 +391,7 @@ async function runSigintCliTest({
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     })),
   }));
   vi.doMock("./core/git.js", () => ({
@@ -547,6 +548,7 @@ async function runCliResumeWithActualRun(
         : { commitMessage: opts.liveCommitMessage }),
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     })),
   }));
   vi.doMock("./core/debug-log.js", () => ({
@@ -666,6 +668,7 @@ describe("cli", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
 
     expect(createAgent).toHaveBeenCalledWith(
@@ -685,6 +688,7 @@ describe("cli", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
 
     expect(telemetry.pageview).toHaveBeenCalledWith("/run", {
@@ -707,6 +711,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
       {
         getCurrentBranch: vi
@@ -755,6 +760,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
     );
 
@@ -775,6 +781,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
     );
 
@@ -799,6 +806,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
     );
 
@@ -821,6 +829,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
     );
 
@@ -846,6 +855,7 @@ describe("cli", () => {
       commitMessage: CONVENTIONAL_COMMIT_MESSAGE,
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
 
     const expectedSchemaOptions = {
@@ -896,6 +906,7 @@ describe("cli", () => {
         commitMessage: CONVENTIONAL_COMMIT_MESSAGE,
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
     );
 
@@ -1081,6 +1092,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
     );
 
@@ -1099,6 +1111,7 @@ describe("cli", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
 
     expect(orchestratorCtor).toHaveBeenCalledTimes(1);
@@ -1120,6 +1133,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
     );
 
@@ -1135,6 +1149,7 @@ describe("cli", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
 
     expect(rendererCtor).toHaveBeenCalledTimes(1);
@@ -1149,6 +1164,7 @@ describe("cli", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
 
     expect(loadConfig).not.toHaveBeenCalled();
@@ -1168,6 +1184,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
       { createBranch },
     );
@@ -1209,6 +1226,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: false,
+          unattended: false,
         },
         { resumeRun, getLastIterationNumber },
       );
@@ -1256,6 +1274,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: false,
+          unattended: false,
         },
         { ensureCleanWorkingTree, resumeRun },
       );
@@ -1279,8 +1298,73 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       }),
     ).rejects.toThrow("process.exit unexpectedly called with 1");
+  });
+
+  it("forwards --unattended to agent creation without writing it during config bootstrap", async () => {
+    const { createAgent, loadConfig } = await runCliWithMocks(
+      ["ship it", "--unattended"],
+      {
+        agent: "claude",
+        agentPathOverride: {},
+        agentArgsOverride: {},
+        acpRegistryOverrides: {},
+        maxConsecutiveFailures: 3,
+        preventSleep: false,
+        unattended: false,
+      },
+    );
+
+    expect(loadConfig).toHaveBeenCalledWith({});
+    expect(createAgent).toHaveBeenCalledWith(
+      "claude",
+      stubRunInfo,
+      undefined,
+      undefined,
+      { includeStopField: false, acpRegistryOverrides: {}, unattended: true },
+    );
+  });
+
+  it("forwards config unattended=true to agent creation", async () => {
+    const { createAgent } = await runCliWithMocks(["ship it"], {
+      agent: "claude",
+      agentPathOverride: {},
+      agentArgsOverride: {},
+      acpRegistryOverrides: {},
+      maxConsecutiveFailures: 3,
+      preventSleep: false,
+      unattended: true,
+    });
+
+    expect(createAgent).toHaveBeenCalledWith(
+      "claude",
+      stubRunInfo,
+      undefined,
+      undefined,
+      { includeStopField: false, acpRegistryOverrides: {}, unattended: true },
+    );
+  });
+
+  it("does not forward unattended to agent creation by default", async () => {
+    const { createAgent } = await runCliWithMocks(["ship it"], {
+      agent: "claude",
+      agentPathOverride: {},
+      agentArgsOverride: {},
+      acpRegistryOverrides: {},
+      maxConsecutiveFailures: 3,
+      preventSleep: false,
+      unattended: false,
+    });
+
+    expect(createAgent).toHaveBeenCalledWith(
+      "claude",
+      stubRunInfo,
+      undefined,
+      undefined,
+      { includeStopField: false, acpRegistryOverrides: {} },
+    );
   });
 
   it("treats --prevent-sleep as a runtime override without passing it to config bootstrap", async () => {
@@ -1292,6 +1376,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       });
 
     expect(loadConfig).toHaveBeenCalledWith({});
@@ -1304,6 +1389,7 @@ describe("cli", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: false,
+      unattended: false,
     });
   });
 
@@ -1323,6 +1409,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: true,
+          unattended: false,
         },
         { appendDebugLog, startSleepPrevention },
       ),
@@ -1357,6 +1444,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: true,
+        unattended: false,
       },
       {
         readStdinText,
@@ -1393,6 +1481,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: true,
+          unattended: false,
         },
         {
           env: {
@@ -1434,6 +1523,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: true,
+        unattended: false,
       },
       {
         env: {
@@ -1477,6 +1567,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: true,
+          unattended: false,
         },
         {
           createAgent,
@@ -1514,6 +1605,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: true,
+          unattended: false,
         },
         {
           env: {
@@ -1546,6 +1638,7 @@ describe("cli", () => {
       acpRegistryOverrides: {},
       maxConsecutiveFailures: 3,
       preventSleep: true,
+      unattended: false,
     }));
     const startSleepPrevention = vi.fn(() =>
       Promise.resolve({
@@ -1717,6 +1810,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: true,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -1854,6 +1948,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: true,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -1987,6 +2082,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: true,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -2115,6 +2211,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: true,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -2240,6 +2337,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: true,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -2358,6 +2456,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/debug-log.js", () => ({
@@ -2477,6 +2576,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
       { orchestratorStart, rendererWaitUntilExit },
     );
@@ -2538,6 +2638,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -2685,6 +2786,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -2788,6 +2890,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
       {
         orchestratorGetState: vi.fn(() => ({
@@ -2859,6 +2962,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -3012,6 +3116,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       })),
     }));
     vi.doMock("./core/git.js", () => ({
@@ -3122,6 +3227,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
       { createBranch },
     );
@@ -3148,6 +3254,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
       { createWorktree },
     );
@@ -3171,6 +3278,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
       { listWorktreePaths },
     );
@@ -3190,6 +3298,7 @@ describe("cli", () => {
         acpRegistryOverrides: {},
         maxConsecutiveFailures: 3,
         preventSleep: false,
+        unattended: false,
       },
       {
         removeWorktree,
@@ -3253,6 +3362,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: false,
+          unattended: false,
         },
         {
           createWorktree,
@@ -3309,6 +3419,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: false,
+          unattended: false,
         },
         {
           getRepoRootDir: vi.fn(() => repoRoot),
@@ -3373,6 +3484,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: false,
+          unattended: false,
         },
         {
           createWorktree,
@@ -3429,6 +3541,7 @@ describe("cli", () => {
           acpRegistryOverrides: {},
           maxConsecutiveFailures: 3,
           preventSleep: false,
+          unattended: false,
           commitMessage: CONVENTIONAL_COMMIT_MESSAGE,
         },
         {

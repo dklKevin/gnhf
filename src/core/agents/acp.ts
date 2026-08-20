@@ -38,6 +38,7 @@ export interface AcpAgentDeps {
   sessionStateDir: string;
   registryOverrides?: Record<string, string>;
   runtimeFactory?: (options: AcpRuntimeOptions) => AcpxRuntimeLike;
+  unattended?: boolean;
 }
 
 function buildAcpPrompt(prompt: string, schema: AgentOutputSchema): string {
@@ -158,6 +159,7 @@ export class AcpAgent implements Agent {
   private readonly runtimeFactory: (
     options: AcpRuntimeOptions,
   ) => AcpxRuntimeLike;
+  private readonly unattended: boolean;
 
   private runtime: AcpxRuntimeLike | null = null;
   private handle: AcpRuntimeHandle | null = null;
@@ -176,6 +178,7 @@ export class AcpAgent implements Agent {
     this.registryOverrides = deps.registryOverrides;
     this.runtimeFactory =
       deps.runtimeFactory ?? ((options) => createAcpRuntime(options));
+    this.unattended = deps.unattended === true;
     this.name = `acp:${deps.target}`;
   }
 
@@ -489,7 +492,7 @@ export class AcpAgent implements Agent {
           ? { overrides: this.registryOverrides }
           : undefined,
       ),
-      permissionMode: "approve-all",
+      ...(this.unattended ? { permissionMode: "approve-all" as const } : {}),
       nonInteractivePermissions: "deny",
     });
     this.runtime = runtime;

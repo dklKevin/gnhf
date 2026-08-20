@@ -66,6 +66,7 @@ const config: Config = {
   acpRegistryOverrides: {},
   maxConsecutiveFailures: 3,
   preventSleep: true,
+  unattended: false,
 };
 
 const runInfo: RunInfo = {

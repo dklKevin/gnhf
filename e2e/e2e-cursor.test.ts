@@ -163,7 +163,7 @@ describe("gnhf e2e cursor agent", () => {
     }
   });
 
-  it("runs --agent cursor through stream-json with force/trust/approve-mcps defaults", async () => {
+  it("runs --agent cursor through stream-json without skip/trust defaults", async () => {
     chmodSync(mockCursorAgentPath, 0o755);
     const cwd = createRepo();
     tempDirs.push(cwd);
@@ -202,14 +202,10 @@ describe("gnhf e2e cursor agent", () => {
       (entry) => entry.event === "spawn",
     );
     expect(spawnEvent).toBeDefined();
-    expect(spawnEvent?.argv).toEqual([
-      "-p",
-      "--output-format",
-      "stream-json",
-      "--force",
-      "--trust",
-      "--approve-mcps",
-    ]);
+    expect(spawnEvent?.argv).toEqual(["-p", "--output-format", "stream-json"]);
+    expect(spawnEvent?.argv).not.toContain("--force");
+    expect(spawnEvent?.argv).not.toContain("--trust");
+    expect(spawnEvent?.argv).not.toContain("--approve-mcps");
     expect(spawnEvent?.hasSchemaContract).toBe(true);
     expect(spawnEvent?.stdinHasObjective).toBe(true);
 
@@ -221,7 +217,47 @@ describe("gnhf e2e cursor agent", () => {
     expect(debugEvents).toContain("run:complete");
   }, 30_000);
 
-  it("keeps --force when agentArgsOverride.cursor sets --sandbox=enabled", async () => {
+  it("injects force/trust/approve-mcps when --unattended is set", async () => {
+    chmodSync(mockCursorAgentPath, 0o755);
+    const cwd = createRepo();
+    tempDirs.push(cwd);
+    const logDir = mkdtempSync(join(tmpdir(), "gnhf-e2e-cursor-logs-"));
+    tempDirs.push(logDir);
+    const mockLogPath = join(logDir, "mock-cursor-unattended.jsonl");
+
+    const result = await runCli(
+      cwd,
+      [
+        "add a hello.txt via cursor agent",
+        "--agent",
+        "cursor",
+        "--max-iterations",
+        "1",
+        "--current-branch",
+        "--prevent-sleep",
+        "off",
+        "--unattended",
+      ],
+      {
+        env: createCursorEnv(tempDirs, { mockLogPath }),
+      },
+    );
+
+    expect(result.code).toBe(0);
+    const spawnEvent = readJsonLines(mockLogPath).find(
+      (entry) => entry.event === "spawn",
+    );
+    expect(spawnEvent?.argv).toEqual([
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--force",
+      "--trust",
+      "--approve-mcps",
+    ]);
+  }, 30_000);
+
+  it("keeps --force when --unattended and agentArgsOverride.cursor sets --sandbox=enabled", async () => {
     chmodSync(mockCursorAgentPath, 0o755);
     const cwd = createRepo();
     tempDirs.push(cwd);
@@ -240,6 +276,7 @@ describe("gnhf e2e cursor agent", () => {
         "--current-branch",
         "--prevent-sleep",
         "off",
+        "--unattended",
       ],
       {
         env: createCursorEnv(tempDirs, {

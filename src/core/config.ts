@@ -80,6 +80,7 @@ export interface Config {
   commitMessage?: CommitMessageConfig;
   maxConsecutiveFailures: number;
   preventSleep: boolean;
+  unattended: boolean;
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -89,6 +90,7 @@ const DEFAULT_CONFIG: Config = {
   acpRegistryOverrides: {},
   maxConsecutiveFailures: 3,
   preventSleep: true,
+  unattended: false,
 };
 
 const ACP_TARGET_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
@@ -98,7 +100,7 @@ function formatAgentNameList(): string {
   return `${quoted.slice(0, -1).join(", ")}, or ${quoted[quoted.length - 1]}`;
 }
 
-function normalizePreventSleep(value: unknown): boolean | undefined {
+function normalizeOnOffBoolean(value: unknown): boolean | undefined {
   if (typeof value === "boolean") return value;
   if (typeof value !== "string") return undefined;
 
@@ -392,7 +394,7 @@ function normalizeConfig(
     config,
     "preventSleep",
   );
-  const preventSleep = normalizePreventSleep(config.preventSleep);
+  const preventSleep = normalizeOnOffBoolean(config.preventSleep);
 
   if (preventSleep === undefined) {
     if (hasPreventSleep && config.preventSleep !== undefined) {
@@ -403,6 +405,23 @@ function normalizeConfig(
     delete normalized.preventSleep;
   } else {
     normalized.preventSleep = preventSleep;
+  }
+
+  const hasUnattended = Object.prototype.hasOwnProperty.call(
+    config,
+    "unattended",
+  );
+  const unattended = normalizeOnOffBoolean(config.unattended);
+
+  if (unattended === undefined) {
+    if (hasUnattended && config.unattended !== undefined) {
+      throw new InvalidConfigError(
+        `Invalid config value for unattended: ${String(config.unattended)}`,
+      );
+    }
+    delete normalized.unattended;
+  } else {
+    normalized.unattended = unattended;
   }
 
   const hasAgentPathOverride = Object.prototype.hasOwnProperty.call(
@@ -600,6 +619,9 @@ function serializeConfig(config: Config): string {
     "",
     "# Prevent the machine from sleeping during a run",
     `preventSleep: ${config.preventSleep}`,
+    "",
+    "# Inject skip/trust/blanket-allow permission defaults for overnight runs",
+    `unattended: ${config.unattended}`,
     "",
   );
 

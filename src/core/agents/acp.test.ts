@@ -159,6 +159,53 @@ describe("AcpAgent", () => {
     expect(agent.name).toBe("acp:gemini");
   });
 
+  it("does not set approve-all permission mode by default", async () => {
+    const { runtime } = createFakeRuntime([
+      {
+        events: [textDelta(JSON.stringify(VALID_OUTPUT))],
+        result: { status: "completed" },
+      },
+    ]);
+    let permissionMode: string | undefined;
+    const agent = new AcpAgent({
+      target: "gemini",
+      schema: TEST_SCHEMA,
+      runId: "run-123",
+      sessionStateDir: "/tmp/acp-sessions",
+      runtimeFactory: (options) => {
+        permissionMode = options.permissionMode;
+        return runtime as never;
+      },
+    });
+
+    await agent.run("p", "/w");
+    expect(permissionMode).toBeUndefined();
+  });
+
+  it("sets approve-all permission mode only when unattended", async () => {
+    const { runtime } = createFakeRuntime([
+      {
+        events: [textDelta(JSON.stringify(VALID_OUTPUT))],
+        result: { status: "completed" },
+      },
+    ]);
+    let permissionMode: string | undefined;
+    const agent = new AcpAgent({
+      target: "gemini",
+      schema: TEST_SCHEMA,
+      runId: "run-123",
+      sessionStateDir: "/tmp/acp-sessions",
+      unattended: true,
+      runtimeFactory: (options) => {
+        permissionMode = options.permissionMode;
+        return runtime as never;
+      },
+    });
+
+    await agent.run("p", "/w");
+    expect(permissionMode).toBe("approve-all");
+  });
+
   it("redacts raw command targets in debug logs", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "gnhf-acp-test-"));
     try {

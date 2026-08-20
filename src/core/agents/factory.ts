@@ -19,6 +19,14 @@ export interface CreateAgentOptions {
   includeStopField: boolean;
   commitFields?: AgentOutputCommitField[];
   acpRegistryOverrides?: Record<string, string>;
+  unattended?: boolean;
+}
+
+function withUnattended<T extends object>(
+  deps: T,
+  unattended?: boolean,
+): T | (T & { unattended: true }) {
+  return unattended ? { ...deps, unattended: true } : deps;
 }
 
 export function createAgent(
@@ -34,40 +42,66 @@ export function createAgent(
   });
 
   if (isAcpSpec(spec)) {
-    return new AcpAgent({
-      target: getAcpTarget(spec),
-      schema,
-      runId: runInfo.runId,
-      sessionStateDir: join(runInfo.runDir, "acp-sessions"),
-      registryOverrides: options.acpRegistryOverrides,
-    });
+    return new AcpAgent(
+      withUnattended(
+        {
+          target: getAcpTarget(spec),
+          schema,
+          runId: runInfo.runId,
+          sessionStateDir: join(runInfo.runDir, "acp-sessions"),
+          registryOverrides: options.acpRegistryOverrides,
+        },
+        options.unattended,
+      ),
+    );
   }
 
   const name = spec;
   switch (name) {
     case "claude":
-      return new ClaudeAgent({
-        bin: pathOverride,
-        extraArgs: agentArgsOverride,
-        schema,
-      });
+      return new ClaudeAgent(
+        withUnattended(
+          {
+            bin: pathOverride,
+            extraArgs: agentArgsOverride,
+            schema,
+          },
+          options.unattended,
+        ),
+      );
     case "codex":
-      return new CodexAgent(runInfo.schemaPath, {
-        bin: pathOverride,
-        extraArgs: agentArgsOverride,
-      });
+      return new CodexAgent(
+        runInfo.schemaPath,
+        withUnattended(
+          {
+            bin: pathOverride,
+            extraArgs: agentArgsOverride,
+          },
+          options.unattended,
+        ),
+      );
     case "copilot":
-      return new CopilotAgent({
-        bin: pathOverride,
-        extraArgs: agentArgsOverride,
-        schema,
-      });
+      return new CopilotAgent(
+        withUnattended(
+          {
+            bin: pathOverride,
+            extraArgs: agentArgsOverride,
+            schema,
+          },
+          options.unattended,
+        ),
+      );
     case "opencode":
-      return new OpenCodeAgent({
-        bin: pathOverride,
-        extraArgs: agentArgsOverride,
-        schema,
-      });
+      return new OpenCodeAgent(
+        withUnattended(
+          {
+            bin: pathOverride,
+            extraArgs: agentArgsOverride,
+            schema,
+          },
+          options.unattended,
+        ),
+      );
     case "pi":
       return new PiAgent({
         bin: pathOverride,
@@ -75,11 +109,16 @@ export function createAgent(
         schema,
       });
     case "cursor":
-      return new CursorAgent({
-        bin: pathOverride,
-        extraArgs: agentArgsOverride,
-        schema,
-      });
+      return new CursorAgent(
+        withUnattended(
+          {
+            bin: pathOverride,
+            extraArgs: agentArgsOverride,
+            schema,
+          },
+          options.unattended,
+        ),
+      );
     case "rovodev":
       return new RovoDevAgent(runInfo.schemaPath, {
         bin: pathOverride,

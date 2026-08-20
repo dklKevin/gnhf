@@ -420,6 +420,53 @@ describe("createAgent", () => {
     });
   });
 
+  it("forwards unattended to agents that inject skip/trust/blanket-allow defaults", () => {
+    createAgent("claude", stubRunInfo, undefined, undefined, {
+      includeStopField: false,
+      unattended: true,
+    });
+    expect(ClaudeAgent).toHaveBeenCalledWith({
+      bin: undefined,
+      extraArgs: undefined,
+      schema: noStopSchema,
+      unattended: true,
+    });
+
+    createAgent("cursor", stubRunInfo, undefined, undefined, {
+      includeStopField: false,
+      unattended: true,
+    });
+    expect(CursorAgent).toHaveBeenCalledWith({
+      bin: undefined,
+      extraArgs: undefined,
+      schema: noStopSchema,
+      unattended: true,
+    });
+
+    createAgent("opencode", stubRunInfo, undefined, undefined, {
+      includeStopField: false,
+      unattended: true,
+    });
+    expect(OpenCodeAgent).toHaveBeenCalledWith({
+      bin: undefined,
+      extraArgs: undefined,
+      schema: noStopSchema,
+      unattended: true,
+    });
+
+    createAgent("acp:gemini", stubRunInfo, undefined, undefined, {
+      includeStopField: false,
+      unattended: true,
+    });
+    expect(AcpAgent).toHaveBeenCalledWith({
+      target: "gemini",
+      schema: noStopSchema,
+      runId: stubRunInfo.runId,
+      sessionStateDir: acpSessionStateDir,
+      unattended: true,
+    });
+  });
+
   it("creates an AcpAgent when the spec uses an acp: prefix", () => {
     const agent = createAgent("acp:gemini", stubRunInfo, undefined, undefined, {
       includeStopField: false,

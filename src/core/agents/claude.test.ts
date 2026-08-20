@@ -61,7 +61,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         expect.any(String),
-        "--dangerously-skip-permissions",
       ],
       {
         cwd: "/work/dir",
@@ -92,7 +91,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         JSON.stringify(STOP_SCHEMA),
-        "--dangerously-skip-permissions",
       ],
       expect.any(Object),
     );
@@ -117,7 +115,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         expect.any(String),
-        "--dangerously-skip-permissions",
       ],
       {
         cwd: "/work/dir",
@@ -149,7 +146,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         expect.any(String),
-        "--dangerously-skip-permissions",
       ],
       {
         cwd: "/work/dir",
@@ -184,7 +180,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         expect.any(String),
-        "--dangerously-skip-permissions",
       ],
       {
         cwd: "/work/dir",
@@ -196,11 +191,45 @@ describe("ClaudeAgent", () => {
     );
   });
 
+  it("does not inject --dangerously-skip-permissions by default", () => {
+    const proc = createMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    new ClaudeAgent().run("test prompt", "/work/dir");
+
+    const args = mockSpawn.mock.calls[0]![1] as string[];
+    expect(args).not.toContain("--dangerously-skip-permissions");
+  });
+
+  it("injects --dangerously-skip-permissions only when unattended", () => {
+    const proc = createMockProcess();
+    mockSpawn.mockReturnValue(proc);
+    const agent = new ClaudeAgent({ unattended: true });
+
+    agent.run("test prompt", "/work/dir");
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      "claude",
+      [
+        "-p",
+        "test prompt",
+        "--verbose",
+        "--output-format",
+        "stream-json",
+        "--json-schema",
+        expect.any(String),
+        "--dangerously-skip-permissions",
+      ],
+      expect.any(Object),
+    );
+  });
+
   it("passes configured extra args through to claude", () => {
     const proc = createMockProcess();
     mockSpawn.mockReturnValue(proc);
     const configuredAgent = new ClaudeAgent({
       extraArgs: ["--model", "sonnet", "--permission-mode=plan"],
+      unattended: true,
     });
 
     configuredAgent.run("test prompt", "/work/dir");

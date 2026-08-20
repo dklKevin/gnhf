@@ -109,7 +109,7 @@ describe("CursorAgent", () => {
     },
   );
 
-  it("spawns cursor-agent in print stream-json mode with force, trust, and approve-mcps defaults", () => {
+  it("spawns cursor-agent in print stream-json mode without skip/trust defaults", () => {
     const proc = createMockProcess();
     mockSpawn.mockReturnValue(proc);
     const agent = new CursorAgent({ platform: "linux" });
@@ -118,14 +118,7 @@ describe("CursorAgent", () => {
 
     expect(mockSpawn).toHaveBeenCalledWith(
       "cursor-agent",
-      [
-        "-p",
-        "--output-format",
-        "stream-json",
-        "--force",
-        "--trust",
-        "--approve-mcps",
-      ],
+      ["-p", "--output-format", "stream-json"],
       {
         cwd: "/work/dir",
         detached: true,
@@ -180,11 +173,36 @@ describe("CursorAgent", () => {
     );
   });
 
+  it("injects --force, --trust, and --approve-mcps only when unattended", () => {
+    const proc = createMockProcess();
+    mockSpawn.mockReturnValue(proc);
+    const agent = new CursorAgent({
+      platform: "linux",
+      unattended: true,
+    });
+
+    agent.run("test prompt", "/work/dir");
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      "cursor-agent",
+      [
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--force",
+        "--trust",
+        "--approve-mcps",
+      ],
+      expect.any(Object),
+    );
+  });
+
   it("passes configured extra args through and suppresses default force when user-managed", () => {
     const proc = createMockProcess();
     mockSpawn.mockReturnValue(proc);
     const agent = new CursorAgent({
       extraArgs: ["--model", "composer-2", "--yolo"],
+      unattended: true,
     });
 
     agent.run("test prompt", "/work/dir");
@@ -196,11 +214,12 @@ describe("CursorAgent", () => {
     expect(args).toContain("--approve-mcps");
   });
 
-  it("keeps default force when user only sets --sandbox", () => {
+  it("keeps unattended force when user only sets --sandbox", () => {
     const proc = createMockProcess();
     mockSpawn.mockReturnValue(proc);
     const agent = new CursorAgent({
       extraArgs: ["--sandbox=enabled"],
+      unattended: true,
     });
 
     agent.run("test prompt", "/work/dir");
@@ -217,11 +236,30 @@ describe("CursorAgent", () => {
     ]);
   });
 
+  it("does not inject skip/trust defaults when user only sets --sandbox", () => {
+    const proc = createMockProcess();
+    mockSpawn.mockReturnValue(proc);
+    const agent = new CursorAgent({
+      extraArgs: ["--sandbox=enabled"],
+    });
+
+    agent.run("test prompt", "/work/dir");
+
+    const args = mockSpawn.mock.calls[0]![1] as string[];
+    expect(args).toEqual([
+      "--sandbox=enabled",
+      "-p",
+      "--output-format",
+      "stream-json",
+    ]);
+  });
+
   it("suppresses default trust when the user already set it", () => {
     const proc = createMockProcess();
     mockSpawn.mockReturnValue(proc);
     const agent = new CursorAgent({
       extraArgs: ["--trust"],
+      unattended: true,
     });
 
     agent.run("test prompt", "/work/dir");
@@ -237,6 +275,7 @@ describe("CursorAgent", () => {
     mockSpawn.mockReturnValue(proc);
     const agent = new CursorAgent({
       extraArgs: ["--approve-mcps"],
+      unattended: true,
     });
 
     agent.run("test prompt", "/work/dir");

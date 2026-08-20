@@ -595,6 +595,10 @@ program
     false,
   )
   .option(
+    "--unattended",
+    "Inject skip/trust/blanket-allow permission defaults so overnight runs cannot hang on prompts",
+  )
+  .option(
     "--meteor-frequency <n>",
     "Meteor frequency from 0 to 5 (0 disables, 3 is default)",
     parseMeteorFrequency,
@@ -613,6 +617,7 @@ program
         worktree: boolean;
         currentBranch: boolean;
         push: boolean;
+        unattended?: boolean;
         meteorFrequency: number;
         mock: boolean;
       },
@@ -666,6 +671,7 @@ program
         ...(options.preventSleep === undefined
           ? {}
           : { preventSleep: options.preventSleep }),
+        ...(options.unattended ? { unattended: true } : {}),
       };
       if (!isAgentSpec(config.agent)) {
         console.error(
@@ -943,6 +949,7 @@ program
         stopWhen: effectiveStopWhen,
         commitMessage: effectiveCommitMessage,
         preventSleep: config.preventSleep,
+        unattended: config.unattended === true,
         agentArgsOverride: getNativeAgentName(config.agent)
           ? config.agentArgsOverride?.[getNativeAgentName(config.agent)!]
           : undefined,
@@ -964,6 +971,7 @@ program
         {
           ...schemaOptions,
           acpRegistryOverrides: config.acpRegistryOverrides,
+          ...(config.unattended ? { unattended: true } : {}),
         },
       );
       const orchestrator = new Orchestrator(
