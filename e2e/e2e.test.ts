@@ -219,6 +219,10 @@ describe("gnhf e2e", () => {
     const startEvent = await waitForLogEvent(mockLogPath, "server:start");
     expect(startEvent.command).toBe("serve");
     expect(isProcessAlive(Number(startEvent.pid))).toBe(false);
+    const sessionCreate = readJsonLines(mockLogPath).find(
+      (entry) => entry.event === "session:create",
+    );
+    expect(sessionCreate?.permission).toBeNull();
 
     const debugLogPath = findRunLogPath(cwd);
     const debugEvents = readJsonLines(debugLogPath).map((entry) => entry.event);

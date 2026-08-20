@@ -61,7 +61,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         expect.any(String),
-        "--dangerously-skip-permissions",
       ],
       {
         cwd: "/work/dir",
@@ -92,7 +91,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         JSON.stringify(STOP_SCHEMA),
-        "--dangerously-skip-permissions",
       ],
       expect.any(Object),
     );
@@ -117,7 +115,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         expect.any(String),
-        "--dangerously-skip-permissions",
       ],
       {
         cwd: "/work/dir",
@@ -149,7 +146,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         expect.any(String),
-        "--dangerously-skip-permissions",
       ],
       {
         cwd: "/work/dir",
@@ -184,7 +180,6 @@ describe("ClaudeAgent", () => {
         "stream-json",
         "--json-schema",
         expect.any(String),
-        "--dangerously-skip-permissions",
       ],
       {
         cwd: "/work/dir",
@@ -196,11 +191,37 @@ describe("ClaudeAgent", () => {
     );
   });
 
+  it("injects --dangerously-skip-permissions only when unattended", () => {
+    const proc = createMockProcess();
+    mockSpawn.mockReturnValue(proc);
+    const configuredAgent = new ClaudeAgent({
+      unattended: true,
+    });
+
+    configuredAgent.run("test prompt", "/work/dir");
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      "claude",
+      [
+        "-p",
+        "test prompt",
+        "--verbose",
+        "--output-format",
+        "stream-json",
+        "--json-schema",
+        expect.any(String),
+        "--dangerously-skip-permissions",
+      ],
+      expect.any(Object),
+    );
+  });
+
   it("passes configured extra args through to claude", () => {
     const proc = createMockProcess();
     mockSpawn.mockReturnValue(proc);
     const configuredAgent = new ClaudeAgent({
       extraArgs: ["--model", "sonnet", "--permission-mode=plan"],
+      unattended: true,
     });
 
     configuredAgent.run("test prompt", "/work/dir");

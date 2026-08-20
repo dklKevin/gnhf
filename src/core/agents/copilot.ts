@@ -36,6 +36,7 @@ interface CopilotAgentDeps {
   extraArgs?: string[];
   platform?: NodeJS.Platform;
   schema?: AgentOutputSchema;
+  unattended?: boolean;
 }
 
 function shouldUseWindowsShell(
@@ -128,6 +129,7 @@ function buildCopilotArgs(
   prompt: string,
   schema: AgentOutputSchema,
   extraArgs?: string[],
+  unattended = false,
 ): string[] {
   const userArgs = extraArgs ?? [];
 
@@ -140,7 +142,9 @@ function buildCopilotArgs(
     "--stream",
     "off",
     "--no-color",
-    ...(userSpecifiedPermissionMode(userArgs) ? [] : ["--allow-all"]),
+    ...(unattended && !userSpecifiedPermissionMode(userArgs)
+      ? ["--allow-all"]
+      : []),
   ];
 }
 
@@ -197,6 +201,7 @@ export class CopilotAgent implements Agent {
   private extraArgs?: string[];
   private platform: NodeJS.Platform;
   private schema: AgentOutputSchema;
+  private unattended: boolean;
 
   constructor(binOrDeps: string | CopilotAgentDeps = {}) {
     const deps = typeof binOrDeps === "string" ? { bin: binOrDeps } : binOrDeps;
@@ -205,6 +210,7 @@ export class CopilotAgent implements Agent {
     this.platform = deps.platform ?? process.platform;
     this.schema =
       deps.schema ?? buildAgentOutputSchema({ includeStopField: false });
+    this.unattended = deps.unattended === true;
   }
 
   run(
@@ -219,7 +225,7 @@ export class CopilotAgent implements Agent {
 
       const child = spawn(
         this.bin,
-        buildCopilotArgs(prompt, this.schema, this.extraArgs),
+        buildCopilotArgs(prompt, this.schema, this.extraArgs, this.unattended),
         {
           cwd,
           shell: shouldUseWindowsShell(this.bin, this.platform),

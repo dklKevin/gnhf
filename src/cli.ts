@@ -595,6 +595,11 @@ program
     false,
   )
   .option(
+    "--unattended",
+    "Inject skip/trust/blanket-allow permission defaults so agents do not prompt",
+    false,
+  )
+  .option(
     "--meteor-frequency <n>",
     "Meteor frequency from 0 to 5 (0 disables, 3 is default)",
     parseMeteorFrequency,
@@ -613,6 +618,7 @@ program
         worktree: boolean;
         currentBranch: boolean;
         push: boolean;
+        unattended: boolean;
         meteorFrequency: number;
         mock: boolean;
       },
@@ -950,6 +956,7 @@ program
         worktreePath,
         currentBranch: options.currentBranch,
         push: options.push,
+        unattended: options.unattended,
         platform: process.platform,
         nodeVersion: process.version,
         gnhfVersion: packageVersion,
@@ -964,6 +971,7 @@ program
         {
           ...schemaOptions,
           acpRegistryOverrides: config.acpRegistryOverrides,
+          ...(options.unattended ? { unattended: true } : {}),
         },
       );
       const orchestrator = new Orchestrator(

@@ -55,6 +55,7 @@ interface ClaudeAgentDeps {
   finalResultGraceMs?: number;
   platform?: NodeJS.Platform;
   schema?: AgentOutputSchema;
+  unattended?: boolean;
 }
 
 function shouldUseWindowsShell(
@@ -139,6 +140,7 @@ function buildClaudeArgs(
   prompt: string,
   schema: AgentOutputSchema,
   extraArgs?: string[],
+  unattended = false,
 ): string[] {
   const userArgs = extraArgs ?? [];
   const userSpecifiedPermissionMode = userArgs.some(
@@ -159,7 +161,9 @@ function buildClaudeArgs(
     "stream-json",
     "--json-schema",
     JSON.stringify(schema),
-    ...(userSpecifiedPermissionMode ? [] : ["--dangerously-skip-permissions"]),
+    ...(unattended && !userSpecifiedPermissionMode
+      ? ["--dangerously-skip-permissions"]
+      : []),
   ];
 }
 
@@ -209,6 +213,7 @@ export class ClaudeAgent implements Agent {
   private finalResultGraceMs: number;
   private platform: NodeJS.Platform;
   private schema: AgentOutputSchema;
+  private unattended: boolean;
 
   constructor(binOrDeps: string | ClaudeAgentDeps = {}) {
     const deps = typeof binOrDeps === "string" ? { bin: binOrDeps } : binOrDeps;
@@ -219,6 +224,7 @@ export class ClaudeAgent implements Agent {
     this.platform = deps.platform ?? process.platform;
     this.schema =
       deps.schema ?? buildAgentOutputSchema({ includeStopField: false });
+    this.unattended = deps.unattended === true;
   }
 
   run(
@@ -233,7 +239,7 @@ export class ClaudeAgent implements Agent {
 
       const child = spawn(
         this.bin,
-        buildClaudeArgs(prompt, this.schema, this.extraArgs),
+        buildClaudeArgs(prompt, this.schema, this.extraArgs, this.unattended),
         {
           cwd,
           detached: this.platform !== "win32",

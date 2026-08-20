@@ -33,6 +33,7 @@ interface CodexAgentDeps {
   bin?: string;
   extraArgs?: string[];
   platform?: NodeJS.Platform;
+  unattended?: boolean;
 }
 
 function shouldUseWindowsShell(
@@ -88,6 +89,7 @@ function buildCodexArgs(
   prompt: string,
   schemaPath: string,
   extraArgs?: string[],
+  unattended = false,
 ): string[] {
   const userArgs = extraArgs ?? [];
   const userSpecifiedExecutionMode = userArgs.some(
@@ -109,9 +111,9 @@ function buildCodexArgs(
     "--json",
     "--output-schema",
     schemaPath,
-    ...(userSpecifiedExecutionMode
-      ? []
-      : ["--dangerously-bypass-approvals-and-sandbox"]),
+    ...(unattended && !userSpecifiedExecutionMode
+      ? ["--dangerously-bypass-approvals-and-sandbox"]
+      : []),
     "--color",
     "never",
   ];
@@ -124,6 +126,7 @@ export class CodexAgent implements Agent {
   private extraArgs?: string[];
   private platform: NodeJS.Platform;
   private schemaPath: string;
+  private unattended: boolean;
 
   constructor(schemaPath: string, binOrDeps: string | CodexAgentDeps = {}) {
     const deps = typeof binOrDeps === "string" ? { bin: binOrDeps } : binOrDeps;
@@ -131,6 +134,7 @@ export class CodexAgent implements Agent {
     this.extraArgs = deps.extraArgs;
     this.platform = deps.platform ?? process.platform;
     this.schemaPath = schemaPath;
+    this.unattended = deps.unattended === true;
   }
 
   run(
@@ -145,7 +149,12 @@ export class CodexAgent implements Agent {
 
       const child = spawn(
         this.bin,
-        buildCodexArgs(prompt, this.schemaPath, this.extraArgs),
+        buildCodexArgs(
+          prompt,
+          this.schemaPath,
+          this.extraArgs,
+          this.unattended,
+        ),
         {
           cwd,
           shell: shouldUseWindowsShell(this.bin, this.platform),

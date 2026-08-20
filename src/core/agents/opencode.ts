@@ -140,6 +140,7 @@ interface OpenCodeDeps {
   platform?: NodeJS.Platform;
   schema?: AgentOutputSchema;
   spawn?: typeof spawn;
+  unattended?: boolean;
 }
 
 interface OpenCodeServer {
@@ -324,6 +325,7 @@ export class OpenCodeAgent implements Agent {
   private platform: NodeJS.Platform;
   private schema: AgentOutputSchema;
   private spawnFn: typeof spawn;
+  private unattended: boolean;
   private server: OpenCodeServer | null = null;
   private closingPromise: Promise<void> | null = null;
 
@@ -337,6 +339,7 @@ export class OpenCodeAgent implements Agent {
     this.schema =
       deps.schema ?? buildAgentOutputSchema({ includeStopField: false });
     this.spawnFn = deps.spawn ?? spawn;
+    this.unattended = deps.unattended === true;
   }
 
   async run(
@@ -640,7 +643,9 @@ export class OpenCodeAgent implements Agent {
         method: "POST",
         body: {
           directory: cwd,
-          permission: BLANKET_PERMISSION_RULESET,
+          ...(this.unattended
+            ? { permission: BLANKET_PERMISSION_RULESET }
+            : {}),
         },
         signal,
       },
