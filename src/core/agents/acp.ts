@@ -492,7 +492,7 @@ export class AcpAgent implements Agent {
           ? { overrides: this.registryOverrides }
           : undefined,
       ),
-      ...(this.unattended ? { permissionMode: "approve-all" as const } : {}),
+      permissionMode: this.unattended ? "approve-all" : "deny-all",
       nonInteractivePermissions: "deny",
     });
     this.runtime = runtime;

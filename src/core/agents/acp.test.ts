@@ -159,7 +159,7 @@ describe("AcpAgent", () => {
     expect(agent.name).toBe("acp:gemini");
   });
 
-  it("does not set approve-all permission mode by default", async () => {
+  it("uses deny-all permission mode by default", async () => {
     const { runtime } = createFakeRuntime([
       {
         events: [textDelta(JSON.stringify(VALID_OUTPUT))],
@@ -179,7 +179,7 @@ describe("AcpAgent", () => {
     });
 
     await agent.run("p", "/w");
-    expect(permissionMode).toBeUndefined();
+    expect(permissionMode).toBe("deny-all");
   });
 
   it("sets approve-all permission mode only when unattended", async () => {
