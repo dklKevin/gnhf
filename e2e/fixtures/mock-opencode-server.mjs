@@ -210,7 +210,11 @@ const server = createServer(async (req, res) => {
     const body = await readJson(req);
     const sessionId = `session-${++sessionCounter}`;
     sessions.set(sessionId, { directory: body.directory, aborted: false });
-    appendLog("session:create", { sessionId, directory: body.directory });
+    appendLog("session:create", {
+      sessionId,
+      directory: body.directory,
+      permission: body.permission ?? null,
+    });
     sendJson(res, { id: sessionId });
     return;
   }
