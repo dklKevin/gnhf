@@ -254,6 +254,52 @@ describe("gnhf e2e cursor agent", () => {
     ]);
   }, 30_000);
 
+  it("injects force/trust/approve-mcps when unattended is set in config", async () => {
+    chmodSync(mockCursorAgentPath, 0o755);
+    const cwd = createRepo();
+    tempDirs.push(cwd);
+    const logDir = mkdtempSync(join(tmpdir(), "gnhf-e2e-cursor-logs-"));
+    tempDirs.push(logDir);
+    const mockLogPath = join(logDir, "mock-cursor-config-unattended.jsonl");
+
+    const result = await runCli(
+      cwd,
+      [
+        "add a hello.txt via cursor agent",
+        "--agent",
+        "cursor",
+        "--max-iterations",
+        "1",
+        "--current-branch",
+        "--prevent-sleep",
+        "off",
+      ],
+      {
+        env: createCursorEnv(tempDirs, {
+          mockLogPath,
+          extraConfigYaml: "unattended: true",
+        }),
+      },
+    );
+
+    expect(result.code).toBe(0);
+    expect(readFileSync(join(cwd, "hello.txt"), "utf-8")).toBe(
+      "hello from cursor mock\n",
+    );
+
+    const spawnEvent = readJsonLines(mockLogPath).find(
+      (entry) => entry.event === "spawn",
+    );
+    expect(spawnEvent?.argv).toEqual([
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--force",
+      "--trust",
+      "--approve-mcps",
+    ]);
+  }, 30_000);
+
   it("keeps --force when --unattended is set and agentArgsOverride.cursor sets --sandbox=enabled", async () => {
     chmodSync(mockCursorAgentPath, 0o755);
     const cwd = createRepo();
