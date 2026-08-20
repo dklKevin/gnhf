@@ -672,6 +672,7 @@ program
         ...(options.preventSleep === undefined
           ? {}
           : { preventSleep: options.preventSleep }),
+        unattended: options.unattended === true || loadedConfig.unattended,
       };
       if (!isAgentSpec(config.agent)) {
         console.error(
@@ -956,7 +957,7 @@ program
         worktreePath,
         currentBranch: options.currentBranch,
         push: options.push,
-        unattended: options.unattended,
+        unattended: config.unattended === true,
         platform: process.platform,
         nodeVersion: process.version,
         gnhfVersion: packageVersion,
@@ -971,7 +972,7 @@ program
         {
           ...schemaOptions,
           acpRegistryOverrides: config.acpRegistryOverrides,
-          ...(options.unattended ? { unattended: true } : {}),
+          ...(config.unattended ? { unattended: true } : {}),
         },
       );
       const orchestrator = new Orchestrator(

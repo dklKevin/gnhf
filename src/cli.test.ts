@@ -1114,6 +1114,30 @@ describe("cli", () => {
     );
   });
 
+  it("forwards config unattended=true to agent creation", async () => {
+    const { createAgent } = await runCliWithMocks(["ship it"], {
+      agent: "claude",
+      agentPathOverride: {},
+      agentArgsOverride: {},
+      acpRegistryOverrides: {},
+      maxConsecutiveFailures: 3,
+      preventSleep: false,
+      unattended: true,
+    });
+
+    expect(createAgent).toHaveBeenCalledWith(
+      "claude",
+      stubRunInfo,
+      undefined,
+      undefined,
+      {
+        includeStopField: false,
+        acpRegistryOverrides: {},
+        unattended: true,
+      },
+    );
+  });
+
   it("passes push mode to the orchestrator when --push is set", async () => {
     const { orchestratorCtor } = await runCliWithMocks(["ship it", "--push"], {
       agent: "claude",
